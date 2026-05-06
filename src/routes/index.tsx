@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Star, Users, Clock, Leaf, Soup, ChefHat } from "lucide-react";
 import { Navbar } from "@/components/ik/Navbar";
 import { Footer } from "@/components/ik/Footer";
-import { Button } from "@/components/ik/../ui/button";
+import { Button } from "@/components/ui/button";
 import heroFood from "@/assets/hero-food.jpg";
 import aboutFood from "@/assets/about-food.jpg";
 import dishBiryani from "@/assets/dish-biryani.jpg";
