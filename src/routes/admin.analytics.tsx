@@ -22,12 +22,12 @@ function Analytics() {
       const weekStart = new Date(now); weekStart.setDate(weekStart.getDate() - 6); weekStart.setHours(0,0,0,0);
 
       const [{ data: ord }, { data: it }] = await Promise.all([
-        supabase.from("orders").select("total,created_at").gte("created_at", monthStart.toISOString()),
-        supabase.from("order_items").select("name,quantity,price,created_at").gte("created_at", monthStart.toISOString()),
+        supabase.from("orders").select("id,total,created_at").gte("created_at", monthStart.toISOString()),
+        supabase.from("order_items").select("name,quantity,price,orders!inner(created_at)").gte("orders.created_at", monthStart.toISOString()),
       ]);
 
       const orders = ord ?? [];
-      const items = it ?? [];
+      const items = (it ?? []) as any[];
 
       const wk: Record<string, number> = {};
       for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate() - i); wk[d.toLocaleDateString("en", { weekday: "short" })] = 0; }

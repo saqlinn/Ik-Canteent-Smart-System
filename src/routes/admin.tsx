@@ -51,7 +51,7 @@ function AdminDashboard() {
       setWeekly(Object.entries(days).map(([day, v]) => ({ day, v })));
 
       // category pie via order_items joined to menu
-      const { data: cats } = await supabase.from("order_items").select("quantity, menu_items(category)").gte("created_at", weekAgo.toISOString());
+      const { data: cats } = await supabase.from("order_items").select("quantity, menu_items(category), orders!inner(created_at)").gte("orders.created_at", weekAgo.toISOString());
       const counts: Record<string, number> = {};
       (cats ?? []).forEach((r: any) => {
         const c = r.menu_items?.category ?? "Other";
