@@ -51,7 +51,10 @@ export function Navbar() {
           )}
           {!user ? (
             <>
-              <Button asChild variant="outline" size="sm"><Link to="/login">Log In</Link></Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/login" search={{ tab: "admin" }}><ChefHat className="mr-1 h-4 w-4" />Admin</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm"><Link to="/login" search={{ tab: "student" }}>Log In</Link></Button>
               <Button asChild size="sm" className="bg-gradient-primary text-primary-foreground shadow-glow hover:opacity-95">
                 <Link to="/menu">Pre-Order Now</Link>
               </Button>
