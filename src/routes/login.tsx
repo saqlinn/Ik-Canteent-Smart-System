@@ -76,9 +76,8 @@ function LoginPage() {
                 kind="admin"
                 onSuccess={() => navigate({ to: "/admin" })}
                 footer={
-                  <p className="text-center text-sm text-muted-foreground">
-                    Need admin access?{" "}
-                    <Link to="/admin-signup" className="font-semibold text-primary hover:underline">Create admin account →</Link>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Admin access is restricted. Contact the kitchen owner for credentials.
                   </p>
                 }
               />
