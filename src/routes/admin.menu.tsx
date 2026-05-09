@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { AdminShell } from "@/components/ik/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/menu")({
-  component: () => <AdminShell><MenuAdmin /></AdminShell>,
+  component: MenuAdmin,
   head: () => ({ meta: [{ title: "Menu Management — Admin" }] }),
 });
 
