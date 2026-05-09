@@ -20,8 +20,6 @@ export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign In — IK Smart Canteen" }] }),
 });
 
-const SESSION_KEY = "ik_session_id";
-
 function LoginPage() {
   const navigate = useNavigate();
   const { tab } = useSearch({ from: "/login" });
@@ -116,10 +114,6 @@ function LoginForm({
         await supabase.auth.signOut();
         throw new Error("Admin accounts must use the Admin tab");
       }
-
-      const sid = crypto.randomUUID();
-      localStorage.setItem(SESSION_KEY, sid);
-      await supabase.from("profiles").update({ active_session_id: sid }).eq("user_id", data.user.id);
 
       toast.success("Welcome back!");
       onSuccess();
