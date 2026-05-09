@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/ik/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin/")({
   component: () => <AdminShell><AdminDashboard /></AdminShell>,
   head: () => ({ meta: [{ title: "Admin Dashboard — IK Smart Canteen" }] }),
 });
