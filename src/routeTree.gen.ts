@@ -69,24 +69,24 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/orders',
+  path: '/admin/orders',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMenuRoute = AdminMenuRouteImport.update({
-  id: '/menu',
-  path: '/menu',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/menu',
+  path: '/admin/menu',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminInventoryRoute = AdminInventoryRouteImport.update({
-  id: '/inventory',
-  path: '/inventory',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/inventory',
+  path: '/admin/inventory',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/analytics',
+  path: '/admin/analytics',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -192,6 +192,10 @@ export interface RootRouteChildren {
   MenuRoute: typeof MenuRoute
   ServicesRoute: typeof ServicesRoute
   SignupRoute: typeof SignupRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminMenuRoute: typeof AdminMenuRoute
+  AdminOrdersRoute: typeof AdminOrdersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -262,31 +266,31 @@ declare module '@tanstack/react-router' {
     }
     '/admin/orders': {
       id: '/admin/orders'
-      path: '/orders'
+      path: '/admin/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/menu': {
       id: '/admin/menu'
-      path: '/menu'
+      path: '/admin/menu'
       fullPath: '/admin/menu'
       preLoaderRoute: typeof AdminMenuRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/inventory': {
       id: '/admin/inventory'
-      path: '/inventory'
+      path: '/admin/inventory'
       fullPath: '/admin/inventory'
       preLoaderRoute: typeof AdminInventoryRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/analytics': {
       id: '/admin/analytics'
-      path: '/analytics'
+      path: '/admin/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AdminAnalyticsRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -300,17 +304,12 @@ const rootRouteChildren: RootRouteChildren = {
   MenuRoute: MenuRoute,
   ServicesRoute: ServicesRoute,
   SignupRoute: SignupRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminInventoryRoute: AdminInventoryRoute,
+  AdminMenuRoute: AdminMenuRoute,
+  AdminOrdersRoute: AdminOrdersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
