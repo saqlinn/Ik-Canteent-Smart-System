@@ -12,7 +12,6 @@ type Profile = {
   department: string | null;
   year: string | null;
   phone: string | null;
-  active_session_id: string | null;
 };
 
 type AuthCtx = {
@@ -26,8 +25,6 @@ type AuthCtx = {
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
-
-const SESSION_KEY = "ik_session_id";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -44,14 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prof as Profile | null);
     const admin = (roles ?? []).some((r: any) => r.role === "admin");
     setIsAdmin(admin);
-
-    // Single-session enforcement
-    const localSid = localStorage.getItem(SESSION_KEY);
-    if (prof && localSid && prof.active_session_id && prof.active_session_id !== localSid) {
-      toast.error("Logged in on another device");
-      await supabase.auth.signOut();
-      localStorage.removeItem(SESSION_KEY);
-    }
   };
 
   useEffect(() => {
@@ -81,10 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (user && profile) {
-      await supabase.from("profiles").update({ active_session_id: null }).eq("user_id", user.id);
-    }
-    localStorage.removeItem(SESSION_KEY);
     await supabase.auth.signOut();
     toast.success("Logged out");
   };

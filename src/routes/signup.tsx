@@ -44,14 +44,6 @@ function SignupPage() {
         },
       });
       if (error) throw error;
-      if (data.user) {
-        const sid = crypto.randomUUID();
-        localStorage.setItem("ik_session_id", sid);
-        // Wait briefly for trigger then update session id
-        setTimeout(() => {
-          supabase.from("profiles").update({ active_session_id: sid }).eq("user_id", data.user!.id);
-        }, 600);
-      }
       toast.success("Account created — welcome!");
       navigate({ to: "/menu" });
     } catch (err: any) {

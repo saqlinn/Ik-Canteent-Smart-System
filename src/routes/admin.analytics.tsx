@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AdminShell } from "@/components/ik/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/admin/analytics")({
-  component: () => <AdminShell><Analytics /></AdminShell>,
+  component: Analytics,
   head: () => ({ meta: [{ title: "Analytics — Admin" }] }),
 });
 

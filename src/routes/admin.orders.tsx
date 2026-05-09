@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AdminShell } from "@/components/ik/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/orders")({
-  component: () => <AdminShell><OrdersPage /></AdminShell>,
+  component: OrdersPage,
   head: () => ({ meta: [{ title: "Orders — Admin" }] }),
 });
 
