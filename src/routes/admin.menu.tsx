@@ -100,13 +100,30 @@ function MenuAdmin() {
           <h1 className="font-display text-3xl font-bold">Menu Management</h1>
           <p className="text-sm text-muted-foreground">Add, edit, delete & toggle availability — students see changes instantly.</p>
         </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setImageFile(null); setImagePreview(null); } }}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-primary text-primary-foreground"><Plus className="mr-1 h-4 w-4" /> Add Item</Button>
+            <Button onClick={() => openDialog(null)} className="bg-gradient-primary text-primary-foreground"><Plus className="mr-1 h-4 w-4" /> Add Item</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editing ? "Edit Item" : "Add New Item"}</DialogTitle></DialogHeader>
             <form onSubmit={save} className="space-y-3">
+              <div>
+                <Label>Meal Image</Label>
+                <div className="mt-1 flex items-center gap-4">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-surface/40">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent">
+                    <Upload className="h-4 w-4" />
+                    {imageFile ? "Change image" : "Upload image"}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => onPick(e.target.files?.[0] ?? null)} />
+                  </label>
+                </div>
+              </div>
               <div><Label>Name</Label><Input name="name" required defaultValue={editing?.name} /></div>
               <div><Label>Description</Label><Input name="description" defaultValue={editing?.description} /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -119,7 +136,9 @@ function MenuAdmin() {
                   {cats.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <Button type="submit" className="w-full bg-gradient-primary text-primary-foreground">{editing ? "Save Changes" : "Add Item"}</Button>
+              <Button type="submit" disabled={uploading} className="w-full bg-gradient-primary text-primary-foreground">
+                {uploading ? "Saving..." : editing ? "Save Changes" : "Add Item"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -129,6 +148,7 @@ function MenuAdmin() {
         <table className="w-full text-sm">
           <thead className="bg-surface/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
+              <th className="px-5 py-3">Image</th>
               <th className="px-5 py-3">Name</th><th className="px-5 py-3">Category</th><th className="px-5 py-3">Price</th>
               <th className="px-5 py-3">Stock</th><th className="px-5 py-3">Available</th><th className="px-5 py-3 text-right">Actions</th>
             </tr>
@@ -136,13 +156,20 @@ function MenuAdmin() {
           <tbody>
             {items.map((it) => (
               <tr key={it.id} className="border-t border-border/50">
+                <td className="px-5 py-3">
+                  {it.image_url ? (
+                    <img src={it.image_url} alt={it.name} className="h-12 w-12 rounded-md object-cover" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface/60 text-muted-foreground"><ImageIcon className="h-4 w-4" /></div>
+                  )}
+                </td>
                 <td className="px-5 py-3 font-semibold">{it.name}</td>
                 <td className="px-5 py-3 text-muted-foreground">{it.category}</td>
                 <td className="px-5 py-3 text-primary font-bold">₹{it.price}</td>
                 <td className="px-5 py-3">{it.stock}</td>
                 <td className="px-5 py-3"><Switch checked={it.available} onCheckedChange={() => toggle(it)} /></td>
                 <td className="px-5 py-3 text-right">
-                  <Button size="icon" variant="ghost" onClick={() => { setEditing(it); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => openDialog(it)}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove(it.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
