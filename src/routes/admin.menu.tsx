@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Upload, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,21 @@ function MenuAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const onPick = (f: File | null) => {
+    setImageFile(f);
+    setImagePreview(f ? URL.createObjectURL(f) : null);
+  };
+
+  const openDialog = (it: any | null) => {
+    setEditing(it);
+    setImageFile(null);
+    setImagePreview(it?.image_url ?? null);
+    setOpen(true);
+  };
 
   const load = async () => {
     const { data } = await supabase.from("menu_items").select("*").order("category").order("name");
@@ -34,19 +49,37 @@ function MenuAdmin() {
   const save = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const payload = {
-      name: fd.get("name") as string,
-      description: fd.get("description") as string,
-      price: Number(fd.get("price")),
-      category: fd.get("category") as string,
-      stock: Number(fd.get("stock") || 50),
-      available: true,
-    };
-    const { error } = editing
-      ? await supabase.from("menu_items").update(payload).eq("id", editing.id)
-      : await supabase.from("menu_items").insert(payload);
-    if (error) toast.error(error.message);
-    else { toast.success(editing ? "Item updated" : "Item added"); setOpen(false); setEditing(null); }
+    setUploading(true);
+    try {
+      let image_url: string | undefined = editing?.image_url;
+      if (imageFile) {
+        const ext = imageFile.name.split(".").pop() || "jpg";
+        const path = `${crypto.randomUUID()}.${ext}`;
+        const up = await supabase.storage.from("menu-images").upload(path, imageFile, { cacheControl: "3600", upsert: false });
+        if (up.error) { toast.error(up.error.message); setUploading(false); return; }
+        image_url = supabase.storage.from("menu-images").getPublicUrl(path).data.publicUrl;
+      }
+      const payload: any = {
+        name: fd.get("name") as string,
+        description: fd.get("description") as string,
+        price: Number(fd.get("price")),
+        category: fd.get("category") as string,
+        stock: Number(fd.get("stock") || 50),
+        available: true,
+      };
+      if (image_url !== undefined) payload.image_url = image_url;
+
+      const { error } = editing
+        ? await supabase.from("menu_items").update(payload).eq("id", editing.id)
+        : await supabase.from("menu_items").insert(payload);
+      if (error) toast.error(error.message);
+      else {
+        toast.success(editing ? "Item updated" : "Item added");
+        setOpen(false); setEditing(null); setImageFile(null); setImagePreview(null);
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const remove = async (id: string) => {
