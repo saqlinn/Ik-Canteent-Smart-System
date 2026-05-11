@@ -28,7 +28,8 @@ function Checkout() {
   const navigate = useNavigate();
   const [method, setMethod] = useState<"upi" | "netbanking">("upi");
   const [chosen, setChosen] = useState<string>("gpay");
-  const [stage, setStage] = useState<"form" | "processing" | "success">("form");
+  const [upiId, setUpiId] = useState("");
+  const [stage, setStage] = useState<"form" | "processing">("form");
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -45,16 +46,19 @@ function Checkout() {
     );
   }
 
+  const upiValid = /^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/.test(upiId.trim());
+  const canPay = method === "upi" ? upiValid : !!chosen;
+
   const pay = async () => {
     if (!user) return;
+    if (method === "upi" && !upiValid) { toast.error("Enter a valid UPI ID (e.g. name@okicici)"); return; }
     setStage("processing");
     try {
-      // Simulate gateway
-      await new Promise((r) => setTimeout(r, 2200));
-
+      await new Promise((r) => setTimeout(r, 2000));
       const label = method === "upi" ? `UPI - ${upiApps.find(u => u.id === chosen)?.name}` : `Net Banking - ${chosen}`;
       const { data: order, error } = await supabase.from("orders").insert({
-        user_id: user.id, subtotal, gst, total, status: "preparing", payment_method: label,
+        user_id: user.id, subtotal, gst, total, status: "preparing",
+        payment_method: label, upi_id: method === "upi" ? upiId.trim() : null,
       }).select().single();
       if (error) throw error;
 
@@ -65,7 +69,7 @@ function Checkout() {
       if (e2) throw e2;
 
       clear();
-      setStage("success");
+      navigate({ to: "/order/$id", params: { id: order.id } });
     } catch (e: any) {
       toast.error(e.message ?? "Payment failed");
       setStage("form");
