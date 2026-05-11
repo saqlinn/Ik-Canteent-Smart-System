@@ -160,6 +160,23 @@ function MenuAdmin() {
         </Dialog>
       </header>
 
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-lg font-bold">Category Closing Times</h2>
+            <p className="text-xs text-muted-foreground">Set when each category stops accepting orders. Items hide from students automatically.</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {cats.map((c) => (
+            <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
+              <div className="text-sm font-semibold">{c}</div>
+              <Input type="time" value={closings[c] ?? ""} onChange={(e) => saveClosing(c, e.target.value)} className="mt-2" />
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-surface/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
