@@ -57,6 +57,7 @@ function MenuAdmin() {
   };
   useEffect(() => {
     load();
+    loadClosings();
     const ch = supabase.channel("menu-admin").on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
