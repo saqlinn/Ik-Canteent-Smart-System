@@ -23,6 +23,21 @@ function MenuAdmin() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [closings, setClosings] = useState<Record<string, string>>({});
+
+  const loadClosings = async () => {
+    const { data } = await supabase.from("category_settings").select("category, closing_time");
+    const map: Record<string, string> = {};
+    (data ?? []).forEach((s: any) => { map[s.category] = (s.closing_time ?? "").slice(0,5); });
+    setClosings(map);
+  };
+
+  const saveClosing = async (category: string, time: string) => {
+    setClosings((c) => ({ ...c, [category]: time }));
+    const { error } = await supabase.from("category_settings")
+      .upsert({ category, closing_time: time || null, updated_at: new Date().toISOString() }, { onConflict: "category" });
+    if (error) toast.error(error.message); else toast.success(`${category} closing time saved`);
+  };
 
   const onPick = (f: File | null) => {
     setImageFile(f);
@@ -42,6 +57,7 @@ function MenuAdmin() {
   };
   useEffect(() => {
     load();
+    loadClosings();
     const ch = supabase.channel("menu-admin").on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -143,6 +159,23 @@ function MenuAdmin() {
           </DialogContent>
         </Dialog>
       </header>
+
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-lg font-bold">Category Closing Times</h2>
+            <p className="text-xs text-muted-foreground">Set when each category stops accepting orders. Items hide from students automatically.</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {cats.map((c) => (
+            <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
+              <div className="text-sm font-semibold">{c}</div>
+              <Input type="time" value={closings[c] ?? ""} onChange={(e) => saveClosing(c, e.target.value)} className="mt-2" />
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <table className="w-full text-sm">
