@@ -96,19 +96,6 @@ function Checkout() {
           </div>
         )}
 
-        {stage === "success" && (
-          <div className="mx-auto max-w-md rounded-3xl border border-border bg-card p-10 text-center shadow-elegant">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
-              <CheckCircle2 className="h-9 w-9" />
-            </div>
-            <h2 className="font-display text-3xl font-bold">Payment Successful!</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Your order is confirmed and being prepared.</p>
-            <div className="mt-8 flex gap-3">
-              <Button asChild variant="outline" className="flex-1"><Link to="/menu">Order More</Link></Button>
-              <Button asChild className="flex-1 bg-gradient-primary text-primary-foreground"><Link to="/">Home</Link></Button>
-            </div>
-          </div>
-        )}
 
         {stage === "form" && (
           <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -147,7 +134,15 @@ function Checkout() {
                 </div>
               )}
 
-              {method === "netbanking" && (
+              {method === "upi" && (
+                <div className="mt-6 space-y-2">
+                  <Label htmlFor="upi">Your UPI ID</Label>
+                  <Input id="upi" value={upiId} onChange={(e) => setUpiId(e.target.value)}
+                    placeholder="yourname@okicici" autoComplete="off"
+                    className="h-12 rounded-xl bg-card" />
+                  <p className="text-xs text-muted-foreground">e.g. <code>9876543210@ybl</code> or <code>name@okhdfcbank</code>. We use this to validate your transaction.</p>
+                </div>
+              )}
                 <div className="mt-6 space-y-3">
                   <label className="text-sm font-medium">Select Your Bank</label>
                   <select value={chosen} onChange={(e) => setChosen(e.target.value)}
@@ -174,7 +169,7 @@ function Checkout() {
                 <div className="flex justify-between"><span className="text-muted-foreground">GST (5%)</span><span>₹{gst.toFixed(2)}</span></div>
                 <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold"><span>Total</span><span className="text-primary">₹{total.toFixed(2)}</span></div>
               </div>
-              <Button onClick={pay} disabled={method === "netbanking" && !chosen} className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow">
+              <Button onClick={pay} disabled={!canPay} className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow">
                 Pay ₹{total.toFixed(2)}
               </Button>
             </aside>
