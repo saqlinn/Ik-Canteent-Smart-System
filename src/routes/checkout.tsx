@@ -143,6 +143,8 @@ function Checkout() {
                   <p className="text-xs text-muted-foreground">e.g. <code>9876543210@ybl</code> or <code>name@okhdfcbank</code>. We use this to validate your transaction.</p>
                 </div>
               )}
+
+              {method === "netbanking" && (
                 <div className="mt-6 space-y-3">
                   <label className="text-sm font-medium">Select Your Bank</label>
                   <select value={chosen} onChange={(e) => setChosen(e.target.value)}
