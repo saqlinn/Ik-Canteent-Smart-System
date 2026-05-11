@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { SideCart } from "@/components/ik/SideCart";
+import { ActiveOrderBar } from "@/components/ik/ActiveOrderBar";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -66,6 +67,7 @@ function RootComponent() {
       <CartProvider>
         <Outlet />
         <SideCart />
+        <ActiveOrderBar />
         <Toaster richColors position="top-right" />
       </CartProvider>
     </AuthProvider>
