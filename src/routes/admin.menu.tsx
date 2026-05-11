@@ -23,6 +23,21 @@ function MenuAdmin() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [closings, setClosings] = useState<Record<string, string>>({});
+
+  const loadClosings = async () => {
+    const { data } = await supabase.from("category_settings").select("category, closing_time");
+    const map: Record<string, string> = {};
+    (data ?? []).forEach((s: any) => { map[s.category] = (s.closing_time ?? "").slice(0,5); });
+    setClosings(map);
+  };
+
+  const saveClosing = async (category: string, time: string) => {
+    setClosings((c) => ({ ...c, [category]: time }));
+    const { error } = await supabase.from("category_settings")
+      .upsert({ category, closing_time: time || null, updated_at: new Date().toISOString() }, { onConflict: "category" });
+    if (error) toast.error(error.message); else toast.success(`${category} closing time saved`);
+  };
 
   const onPick = (f: File | null) => {
     setImageFile(f);
