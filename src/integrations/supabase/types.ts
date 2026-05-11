@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      category_settings: {
+        Row: {
+          category: string
+          closing_time: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          closing_time?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          closing_time?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           id: string
@@ -178,6 +199,7 @@ export type Database = {
           status: string
           subtotal: number
           total: number
+          upi_id: string | null
           user_id: string
         }
         Insert: {
@@ -188,6 +210,7 @@ export type Database = {
           status?: string
           subtotal: number
           total: number
+          upi_id?: string | null
           user_id: string
         }
         Update: {
@@ -198,6 +221,7 @@ export type Database = {
           status?: string
           subtotal?: number
           total?: number
+          upi_id?: string | null
           user_id?: string
         }
         Relationships: []
