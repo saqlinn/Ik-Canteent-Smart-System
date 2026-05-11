@@ -33,7 +33,7 @@ function AboutPage() {
       <section className="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-24 md:grid-cols-2">
         <div className="relative overflow-hidden rounded-3xl border border-border shadow-elegant">
           <img src={founder} alt="Indumathi Rajamani" loading="lazy" width={1024} height={1200} className="w-full object-cover" />
-          <div className="absolute right-5 top-5 rounded-full bg-card/90 px-4 py-2 text-sm font-semibold backdrop-blur">
+          <div className="absolute bottom-5 right-5 rounded-full bg-card/90 px-4 py-2 text-sm font-semibold shadow-elegant backdrop-blur">
             ★ 4.9 Rating
           </div>
         </div>
