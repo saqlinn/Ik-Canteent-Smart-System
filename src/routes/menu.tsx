@@ -37,6 +37,7 @@ function MenuPage() {
   const [cat, setCat] = useState<(typeof CATS)[number]>("Breakfast");
   const [q, setQ] = useState("");
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [closings, setClosings] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const { add, count, open: openCart } = useCart();
   const { user, profile, isAdmin, signOut } = useAuth();
@@ -44,18 +45,36 @@ function MenuPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.from("menu_items").select("*").eq("available", true).order("created_at");
+      const [{ data }, { data: settings }] = await Promise.all([
+        supabase.from("menu_items").select("*").eq("available", true).order("created_at"),
+        supabase.from("category_settings").select("category, closing_time"),
+      ]);
       setItems((data ?? []) as MenuItem[]);
+      const map: Record<string, string | null> = {};
+      (settings ?? []).forEach((s: any) => { map[s.category] = s.closing_time; });
+      setClosings(map);
       setLoading(false);
     };
     load();
-    const ch = supabase.channel("menu-public").on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, load).subscribe();
+    const ch = supabase.channel("menu-public")
+      .on("postgres_changes", { event: "*", schema: "public", table: "menu_items" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "category_settings" }, load)
+      .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  const isClosed = (c: string) => {
+    const t = closings[c];
+    if (!t) return false;
+    const [hh, mm] = t.split(":").map(Number);
+    const now = new Date();
+    const close = new Date(); close.setHours(hh, mm ?? 0, 0, 0);
+    return now > close;
+  };
+
   const filtered = useMemo(
-    () => items.filter((i) => i.category === cat && i.name.toLowerCase().includes(q.toLowerCase())),
-    [items, cat, q]
+    () => isClosed(cat) ? [] : items.filter((i) => i.category === cat && i.name.toLowerCase().includes(q.toLowerCase())),
+    [items, cat, q, closings]
   );
 
   const handleAdd = (it: MenuItem) => {
@@ -155,7 +174,13 @@ function MenuPage() {
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {loading && <div className="col-span-full rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">Loading menu...</div>}
-            {!loading && filtered.length === 0 && (
+            {!loading && isClosed(cat) && (
+              <div className="col-span-full rounded-2xl border border-amber-500/30 bg-amber-500/5 p-12 text-center">
+                <div className="font-display text-xl font-bold text-amber-400">{cat} is closed for today</div>
+                <p className="mt-2 text-sm text-muted-foreground">Closing time: {closings[cat]?.slice(0,5)}. Try another category!</p>
+              </div>
+            )}
+            {!loading && !isClosed(cat) && filtered.length === 0 && (
               <div className="col-span-full rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">No items match your search.</div>
             )}
             {filtered.map((it) => {
