@@ -172,17 +172,29 @@ function MenuAdmin() {
       <div className="mb-6 rounded-2xl border border-border bg-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold">Category Closing Times</h2>
-            <p className="text-xs text-muted-foreground">Set when each category stops accepting orders. Items hide from students automatically.</p>
+            <h2 className="font-display text-lg font-bold">Category Opening & Closing Times</h2>
+            <p className="text-xs text-muted-foreground">Set when each category opens and closes. Outside these hours, items hide from students automatically.</p>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cats.map((c) => (
-            <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
-              <div className="text-sm font-semibold">{c}</div>
-              <Input type="time" value={closings[c] ?? ""} onChange={(e) => saveClosing(c, e.target.value)} className="mt-2" />
-            </div>
-          ))}
+          {cats.map((c) => {
+            const t = closings[c] ?? { open: "", close: "" };
+            return (
+              <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
+                <div className="text-sm font-semibold">{c}</div>
+                <div className="mt-3 space-y-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Opens</Label>
+                    <Input type="time" value={t.open} onChange={(e) => saveTimes(c, "open", e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Closes</Label>
+                    <Input type="time" value={t.close} onChange={(e) => saveTimes(c, "close", e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
