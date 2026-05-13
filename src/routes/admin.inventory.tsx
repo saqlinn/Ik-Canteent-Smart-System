@@ -62,14 +62,6 @@ function Inventory() {
     toast.success(`Logged ${amount} ${item.unit} used`); load();
   };
 
-  const logUsage = async (id: string, amount: number) => {
-    const item = items.find((i) => i.id === id);
-    if (!item) return;
-    const { error } = await supabase.from("inventory").update({ used: Number(item.used) + amount }).eq("id", id);
-    if (error) return toast.error(error.message);
-    await supabase.from("inventory_logs").insert({ inventory_id: id, amount, kind: "usage", note: "Daily usage" });
-    toast.success(`Logged ${amount} ${item.unit} used`); load();
-  };
 
   const addNew = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
