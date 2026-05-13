@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Package, BarChart3, LogOut, AlertTriangle } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Package, BarChart3, LogOut, Users } from "lucide-react";
 import { Logo } from "@/components/ik/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -24,6 +24,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     { icon: ClipboardList, label: "Orders", to: "/admin/orders" },
     { icon: UtensilsCrossed, label: "Menu", to: "/admin/menu" },
     { icon: Package, label: "Inventory", to: "/admin/inventory" },
+    { icon: Users, label: "Users", to: "/admin/users" },
     { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
   ] as const;
 

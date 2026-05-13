@@ -140,6 +140,10 @@ function LoginForm({
         </div>
       </div>
 
+      <div className="flex justify-end -mt-1">
+        <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
+      </div>
+
       <Button type="submit" disabled={busy} className="w-full bg-gradient-primary text-primary-foreground shadow-glow">
         {busy ? "Signing in..." : kind === "admin" ? "Sign In as Admin →" : "Sign In →"}
       </Button>
