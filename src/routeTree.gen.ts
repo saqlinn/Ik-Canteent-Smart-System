@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ServicesRouteImport } from './routes/services'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -20,6 +23,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
@@ -35,6 +39,16 @@ const ServicesRoute = ServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MenuRoute = MenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -43,6 +57,11 @@ const MenuRoute = MenuRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -80,6 +99,11 @@ const OrderIdRoute = OrderIdRouteImport.update({
   path: '/order/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -107,14 +131,18 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/menu': typeof MenuRoute
+  '/orders': typeof OrdersRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/services': typeof ServicesRoute
   '/signup': typeof SignupRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/users': typeof AdminUsersRoute
   '/order/$id': typeof OrderIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -123,14 +151,18 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/menu': typeof MenuRoute
+  '/orders': typeof OrdersRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/services': typeof ServicesRoute
   '/signup': typeof SignupRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/users': typeof AdminUsersRoute
   '/order/$id': typeof OrderIdRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -141,14 +173,18 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/menu': typeof MenuRoute
+  '/orders': typeof OrdersRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/services': typeof ServicesRoute
   '/signup': typeof SignupRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/users': typeof AdminUsersRoute
   '/order/$id': typeof OrderIdRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -160,14 +196,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/checkout'
     | '/contact'
+    | '/forgot-password'
     | '/login'
     | '/menu'
+    | '/orders'
+    | '/reset-password'
     | '/services'
     | '/signup'
     | '/admin/analytics'
     | '/admin/inventory'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/users'
     | '/order/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -176,14 +216,18 @@ export interface FileRouteTypes {
     | '/about'
     | '/checkout'
     | '/contact'
+    | '/forgot-password'
     | '/login'
     | '/menu'
+    | '/orders'
+    | '/reset-password'
     | '/services'
     | '/signup'
     | '/admin/analytics'
     | '/admin/inventory'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/users'
     | '/order/$id'
     | '/admin'
   id:
@@ -193,14 +237,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/checkout'
     | '/contact'
+    | '/forgot-password'
     | '/login'
     | '/menu'
+    | '/orders'
+    | '/reset-password'
     | '/services'
     | '/signup'
     | '/admin/analytics'
     | '/admin/inventory'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/users'
     | '/order/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -211,8 +259,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   MenuRoute: typeof MenuRoute
+  OrdersRoute: typeof OrdersRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ServicesRoute: typeof ServicesRoute
   SignupRoute: typeof SignupRoute
   OrderIdRoute: typeof OrderIdRoute
@@ -234,6 +285,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/menu': {
       id: '/menu'
       path: '/menu'
@@ -246,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -297,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/orders': {
       id: '/admin/orders'
       path: '/orders'
@@ -333,6 +412,7 @@ interface AdminRouteChildren {
   AdminInventoryRoute: typeof AdminInventoryRoute
   AdminMenuRoute: typeof AdminMenuRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -341,6 +421,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminInventoryRoute: AdminInventoryRoute,
   AdminMenuRoute: AdminMenuRoute,
   AdminOrdersRoute: AdminOrdersRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -352,8 +433,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   MenuRoute: MenuRoute,
+  OrdersRoute: OrdersRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ServicesRoute: ServicesRoute,
   SignupRoute: SignupRoute,
   OrderIdRoute: OrderIdRoute,
