@@ -120,13 +120,19 @@ function Inventory() {
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
                 <div className="h-full bg-gradient-primary" style={{ width: `${pct}%` }} />
               </div>
-              <div className="mt-4 flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => {
-                  const v = prompt(`Add monthly stock (${it.unit}):`); if (v) addStock(it.id, Number(v));
-                }}><Plus className="mr-1 h-3 w-3" /> Stock</Button>
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => {
-                  const v = prompt(`Log daily usage (${it.unit}):`); if (v) logUsage(it.id, Number(v));
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" onClick={() => {
+                  const v = prompt(`Add stock (${it.unit}):`); if (v && Number(v) > 0) addStock(it.id, Number(v));
+                }}><Plus className="mr-1 h-3 w-3" /> Add Stock</Button>
+                <Button size="sm" variant="outline" onClick={() => {
+                  const v = prompt(`Remove stock (${it.unit}):`); if (v && Number(v) > 0) removeStock(it.id, Number(v));
+                }}><Minus className="mr-1 h-3 w-3" /> Remove Stock</Button>
+                <Button size="sm" variant="outline" onClick={() => {
+                  const v = prompt(`Log daily usage (${it.unit}):`); if (v && Number(v) > 0) logUsage(it.id, Number(v));
                 }}><TrendingDown className="mr-1 h-3 w-3" /> Use</Button>
+                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => deleteItem(it.id, it.item_name)}>
+                  <Trash2 className="mr-1 h-3 w-3" /> Delete
+                </Button>
               </div>
             </div>
           );
