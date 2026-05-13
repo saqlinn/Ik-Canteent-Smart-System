@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ShoppingCart, Search, Plus, Star, Clock, Sparkles, Home, History as HistoryIcon, LogOut } from "lucide-react";
+import { Bell, ShoppingCart, Search, Plus, Star, Clock, Sparkles, Home, History as HistoryIcon, LogOut, Receipt } from "lucide-react";
 import { Logo } from "@/components/ik/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ function MenuPage() {
   const [cat, setCat] = useState<(typeof CATS)[number]>("Breakfast");
   const [q, setQ] = useState("");
   const [items, setItems] = useState<MenuItem[]>([]);
-  const [closings, setClosings] = useState<Record<string, string | null>>({});
+  const [closings, setClosings] = useState<Record<string, { open: string | null; close: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const { add, count, open: openCart } = useCart();
   const { user, profile, isAdmin, signOut } = useAuth();
@@ -47,11 +47,11 @@ function MenuPage() {
     const load = async () => {
       const [{ data }, { data: settings }] = await Promise.all([
         supabase.from("menu_items").select("*").eq("available", true).order("created_at"),
-        supabase.from("category_settings").select("category, closing_time"),
+        supabase.from("category_settings").select("category, opening_time, closing_time"),
       ]);
       setItems((data ?? []) as MenuItem[]);
-      const map: Record<string, string | null> = {};
-      (settings ?? []).forEach((s: any) => { map[s.category] = s.closing_time; });
+      const map: Record<string, { open: string | null; close: string | null }> = {};
+      (settings ?? []).forEach((s: any) => { map[s.category] = { open: s.opening_time, close: s.closing_time }; });
       setClosings(map);
       setLoading(false);
     };
@@ -63,14 +63,21 @@ function MenuPage() {
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  const isClosed = (c: string) => {
-    const t = closings[c];
-    if (!t) return false;
-    const [hh, mm] = t.split(":").map(Number);
+  const catStatus = (c: string): { closed: boolean; reason?: string } => {
+    const s = closings[c];
+    if (!s) return { closed: false };
     const now = new Date();
-    const close = new Date(); close.setHours(hh, mm ?? 0, 0, 0);
-    return now > close;
+    const mk = (t: string | null) => {
+      if (!t) return null;
+      const [hh, mm] = t.split(":").map(Number);
+      const d = new Date(); d.setHours(hh, mm ?? 0, 0, 0); return d;
+    };
+    const open = mk(s.open), close = mk(s.close);
+    if (open && now < open) return { closed: true, reason: `Opens at ${s.open?.slice(0,5)}` };
+    if (close && now > close) return { closed: true, reason: `Closed at ${s.close?.slice(0,5)}` };
+    return { closed: false };
   };
+  const isClosed = (c: string) => catStatus(c).closed;
 
   const filtered = useMemo(
     () => isClosed(cat) ? [] : items.filter((i) => i.category === cat && i.name.toLowerCase().includes(q.toLowerCase())),
@@ -109,6 +116,7 @@ function MenuPage() {
         <nav className="mt-8 space-y-1">
           {[
             { icon: Home, label: "Menu", to: "/menu" },
+            { icon: Receipt, label: "My Orders", to: "/orders" },
             { icon: Clock, label: "About", to: "/about" },
             { icon: HistoryIcon, label: "Services", to: "/services" },
             { icon: HistoryIcon, label: "Contact", to: "/contact" },
