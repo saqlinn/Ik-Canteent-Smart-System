@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus, AlertTriangle, TrendingDown } from "lucide-react";
+import { Plus, AlertTriangle, TrendingDown, Minus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +31,35 @@ function Inventory() {
     if (!item) return;
     const { error } = await supabase.from("inventory").update({ total_stock: Number(item.total_stock) + amount }).eq("id", id);
     if (error) return toast.error(error.message);
-    await supabase.from("inventory_logs").insert({ inventory_id: id, amount, kind: "stock_in", note: "Monthly stock added" });
+    await supabase.from("inventory_logs").insert({ inventory_id: id, amount, kind: "stock_in", note: "Stock added" });
     toast.success(`Added ${amount} ${item.unit}`); load();
+  };
+
+  const removeStock = async (id: string, amount: number) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    const newTotal = Math.max(0, Number(item.total_stock) - amount);
+    const { error } = await supabase.from("inventory").update({ total_stock: newTotal }).eq("id", id);
+    if (error) return toast.error(error.message);
+    await supabase.from("inventory_logs").insert({ inventory_id: id, amount, kind: "stock_out", note: "Stock removed" });
+    toast.success(`Removed ${amount} ${item.unit}`); load();
+  };
+
+  const deleteItem = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}" from inventory? This cannot be undone.`)) return;
+    await supabase.from("inventory_logs").delete().eq("inventory_id", id);
+    const { error } = await supabase.from("inventory").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Item deleted"); load();
+  };
+
+  const logUsage = async (id: string, amount: number) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    const { error } = await supabase.from("inventory").update({ used: Number(item.used) + amount }).eq("id", id);
+    if (error) return toast.error(error.message);
+    await supabase.from("inventory_logs").insert({ inventory_id: id, amount, kind: "usage", note: "Daily usage" });
+    toast.success(`Logged ${amount} ${item.unit} used`); load();
   };
 
   const logUsage = async (id: string, amount: number) => {
