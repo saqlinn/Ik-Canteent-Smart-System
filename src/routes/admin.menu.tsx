@@ -23,20 +23,29 @@ function MenuAdmin() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [closings, setClosings] = useState<Record<string, string>>({});
+  const [closings, setClosings] = useState<Record<string, { open: string; close: string }>>({});
 
   const loadClosings = async () => {
-    const { data } = await supabase.from("category_settings").select("category, closing_time");
-    const map: Record<string, string> = {};
-    (data ?? []).forEach((s: any) => { map[s.category] = (s.closing_time ?? "").slice(0,5); });
+    const { data } = await supabase.from("category_settings").select("category, opening_time, closing_time");
+    const map: Record<string, { open: string; close: string }> = {};
+    (data ?? []).forEach((s: any) => {
+      map[s.category] = { open: (s.opening_time ?? "").slice(0,5), close: (s.closing_time ?? "").slice(0,5) };
+    });
     setClosings(map);
   };
 
-  const saveClosing = async (category: string, time: string) => {
-    setClosings((c) => ({ ...c, [category]: time }));
+  const saveTimes = async (category: string, field: "open" | "close", time: string) => {
+    setClosings((c) => ({ ...c, [category]: { ...(c[category] ?? { open: "", close: "" }), [field]: time } }));
+    const current = closings[category] ?? { open: "", close: "" };
+    const next = { ...current, [field]: time };
     const { error } = await supabase.from("category_settings")
-      .upsert({ category, closing_time: time || null, updated_at: new Date().toISOString() }, { onConflict: "category" });
-    if (error) toast.error(error.message); else toast.success(`${category} closing time saved`);
+      .upsert({
+        category,
+        opening_time: next.open || null,
+        closing_time: next.close || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "category" });
+    if (error) toast.error(error.message); else toast.success(`${category} ${field === "open" ? "opening" : "closing"} time saved`);
   };
 
   const onPick = (f: File | null) => {
