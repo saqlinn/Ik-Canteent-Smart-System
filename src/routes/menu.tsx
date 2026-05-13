@@ -184,8 +184,8 @@ function MenuPage() {
             {loading && <div className="col-span-full rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">Loading menu...</div>}
             {!loading && isClosed(cat) && (
               <div className="col-span-full rounded-2xl border border-amber-500/30 bg-amber-500/5 p-12 text-center">
-                <div className="font-display text-xl font-bold text-amber-400">{cat} is closed for today</div>
-                <p className="mt-2 text-sm text-muted-foreground">Closing time: {closings[cat]?.slice(0,5)}. Try another category!</p>
+                <div className="font-display text-xl font-bold text-amber-400">{cat} is currently closed</div>
+                <p className="mt-2 text-sm text-muted-foreground">{catStatus(cat).reason}. Try another category!</p>
               </div>
             )}
             {!loading && !isClosed(cat) && filtered.length === 0 && (
