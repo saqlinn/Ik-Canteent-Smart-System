@@ -23,20 +23,29 @@ function MenuAdmin() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [closings, setClosings] = useState<Record<string, string>>({});
+  const [closings, setClosings] = useState<Record<string, { open: string; close: string }>>({});
 
   const loadClosings = async () => {
-    const { data } = await supabase.from("category_settings").select("category, closing_time");
-    const map: Record<string, string> = {};
-    (data ?? []).forEach((s: any) => { map[s.category] = (s.closing_time ?? "").slice(0,5); });
+    const { data } = await supabase.from("category_settings").select("category, opening_time, closing_time");
+    const map: Record<string, { open: string; close: string }> = {};
+    (data ?? []).forEach((s: any) => {
+      map[s.category] = { open: (s.opening_time ?? "").slice(0,5), close: (s.closing_time ?? "").slice(0,5) };
+    });
     setClosings(map);
   };
 
-  const saveClosing = async (category: string, time: string) => {
-    setClosings((c) => ({ ...c, [category]: time }));
+  const saveTimes = async (category: string, field: "open" | "close", time: string) => {
+    setClosings((c) => ({ ...c, [category]: { ...(c[category] ?? { open: "", close: "" }), [field]: time } }));
+    const current = closings[category] ?? { open: "", close: "" };
+    const next = { ...current, [field]: time };
     const { error } = await supabase.from("category_settings")
-      .upsert({ category, closing_time: time || null, updated_at: new Date().toISOString() }, { onConflict: "category" });
-    if (error) toast.error(error.message); else toast.success(`${category} closing time saved`);
+      .upsert({
+        category,
+        opening_time: next.open || null,
+        closing_time: next.close || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "category" });
+    if (error) toast.error(error.message); else toast.success(`${category} ${field === "open" ? "opening" : "closing"} time saved`);
   };
 
   const onPick = (f: File | null) => {
@@ -163,17 +172,29 @@ function MenuAdmin() {
       <div className="mb-6 rounded-2xl border border-border bg-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold">Category Closing Times</h2>
-            <p className="text-xs text-muted-foreground">Set when each category stops accepting orders. Items hide from students automatically.</p>
+            <h2 className="font-display text-lg font-bold">Category Opening & Closing Times</h2>
+            <p className="text-xs text-muted-foreground">Set when each category opens and closes. Outside these hours, items hide from students automatically.</p>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cats.map((c) => (
-            <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
-              <div className="text-sm font-semibold">{c}</div>
-              <Input type="time" value={closings[c] ?? ""} onChange={(e) => saveClosing(c, e.target.value)} className="mt-2" />
-            </div>
-          ))}
+          {cats.map((c) => {
+            const t = closings[c] ?? { open: "", close: "" };
+            return (
+              <div key={c} className="rounded-xl border border-border bg-background/40 p-4">
+                <div className="text-sm font-semibold">{c}</div>
+                <div className="mt-3 space-y-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Opens</Label>
+                    <Input type="time" value={t.open} onChange={(e) => saveTimes(c, "open", e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Closes</Label>
+                    <Input type="time" value={t.close} onChange={(e) => saveTimes(c, "close", e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

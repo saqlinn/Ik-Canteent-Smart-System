@@ -19,18 +19,21 @@ export type Database = {
           category: string
           closing_time: string | null
           id: string
+          opening_time: string | null
           updated_at: string
         }
         Insert: {
           category: string
           closing_time?: string | null
           id?: string
+          opening_time?: string | null
           updated_at?: string
         }
         Update: {
           category?: string
           closing_time?: string | null
           id?: string
+          opening_time?: string | null
           updated_at?: string
         }
         Relationships: []
