@@ -5,7 +5,20 @@ import { Logo } from "@/components/ik/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import {
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  serverTimestamp,
+} from "firebase/firestore";
+import { auth, db } from "@/integrations/firebase/config";
 import { toast } from "sonner";
 import heroFood from "@/assets/hero-food.jpg";
 
@@ -29,25 +42,50 @@ function SignupPage() {
     setBusy(true);
     try {
       // Pre-check unique register number
-      const { data: existing } = await supabase.from("profiles").select("id").eq("register_no", f.register_no).maybeSingle();
-      if (existing) throw new Error("Register number already registered");
+      const regQ = query(
+        collection(db, "profiles"),
+        where("register_no", "==", f.register_no)
+      );
+      const regSnap = await getDocs(regQ);
+      if (!regSnap.empty) throw new Error("Register number already registered");
 
-      const { data, error } = await supabase.auth.signUp({
-        email: f.email,
-        password: f.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/menu`,
-          data: {
-            full_name: f.full_name, register_no: f.register_no, college: f.college,
-            department: f.department, year: f.year, phone: f.phone,
-          },
-        },
+      // Create Firebase Auth account
+      const cred = await createUserWithEmailAndPassword(auth, f.email, f.password);
+      const uid = cred.user.uid;
+
+      // Update Firebase Auth display name
+      await updateProfile(cred.user, { displayName: f.full_name });
+
+      const now = new Date().toISOString();
+
+      // Create profile document in Firestore (doc id = uid)
+      await setDoc(doc(db, "profiles", uid), {
+        user_id: uid,
+        full_name: f.full_name,
+        register_no: f.register_no,
+        college: f.college,
+        department: f.department,
+        year: f.year,
+        phone: f.phone,
+        created_at: now,
+        updated_at: now,
       });
-      if (error) throw error;
+
+      // Assign default student role
+      await setDoc(doc(collection(db, "user_roles")), {
+        user_id: uid,
+        role: "student",
+      });
+
       toast.success("Account created — welcome!");
       navigate({ to: "/menu" });
     } catch (err: any) {
-      toast.error(err.message ?? "Signup failed");
+      const msg = err.code === "auth/email-already-in-use"
+        ? "An account with this email already exists"
+        : err.code === "auth/weak-password"
+        ? "Password should be at least 6 characters"
+        : err.message ?? "Signup failed";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

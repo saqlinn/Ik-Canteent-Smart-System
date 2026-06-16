@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, X, ShoppingCart, LogOut, User as UserIcon, ChefHat } from "lucide-react";
+import { Menu, X, ShoppingCart, LogOut, User as UserIcon, ChefHat, ArrowLeft } from "lucide-react";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,23 +14,35 @@ const links = [
   { to: "/contact", label: "Contact" },
 ] as const;
 
+const wfLink = { to: "/wild-fermentation", label: "Wild Fermentation" } as const;
+
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, isAdmin, signOut, profile } = useAuth();
   const { count, open: openCart } = useCart();
   const navigate = useNavigate();
+  const path = useRouterState({ select: (s) => s.location.pathname });
 
   const handleLogout = async () => {
     await signOut();
     navigate({ to: "/" });
   };
 
+  const showBack = path !== "/";
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link to="/" className="shrink-0"><Logo /></Link>
+        <div className="flex items-center gap-4">
+          {showBack && (
+            <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/" })} className="md:hidden -ml-2 h-9 w-9 rounded-full bg-surface/50">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <Link to="/" className="shrink-0"><Logo /></Link>
+        </div>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-6 md:flex">
           {links.map((l) => (
             <Link key={l.to} to={l.to}
               className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
@@ -38,6 +50,16 @@ export function Navbar() {
               {l.label}
             </Link>
           ))}
+          <Link
+            to={wfLink.to}
+            className="relative flex items-center gap-1.5 text-sm font-semibold text-emerald-400 transition-colors hover:text-emerald-300"
+            activeProps={{ className: "text-emerald-300" }}
+          >
+            🫙 {wfLink.label}
+            <span className="absolute -right-7 -top-2.5 animate-bounce rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-black shadow">
+              NEW
+            </span>
+          </Link>
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -84,6 +106,16 @@ export function Navbar() {
                 {l.label}
               </Link>
             ))}
+            <Link
+              to={wfLink.to}
+              className="flex items-center gap-2 text-base font-semibold text-emerald-400"
+              onClick={() => setOpen(false)}
+            >
+              🫙 Wild Fermentation
+              <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-black uppercase text-black">
+                NEW
+              </span>
+            </Link>
             <div className="flex gap-3 pt-2">
               {!user ? (
                 <>

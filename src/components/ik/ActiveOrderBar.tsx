@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChefHat, Package, CheckCircle2, ChevronRight, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/integrations/firebase/config";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -19,7 +20,6 @@ const STAGE_META: Record<string, { label: string; pct: number; icon: any; tone: 
 };
 
 const DISMISS_KEY = "ik_dismissed_orders_v1";
-
 function getDismissed(): string[] {
   try { return JSON.parse(localStorage.getItem(DISMISS_KEY) || "[]"); } catch { return []; }
 }
@@ -46,52 +46,40 @@ export function ActiveOrderBar() {
   useEffect(() => {
     if (!user) { setOrders([]); return; }
 
-    const load = async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id,status,total,created_at")
-        .eq("user_id", user.id)
-        .in("status", ["preparing", "ready"])
-        .order("created_at", { ascending: false });
-      setOrders((data ?? []) as ActiveOrder[]);
-      (data ?? []).forEach((o: any) => { lastStatus.current[o.id] = o.status; });
-    };
-    load();
+    const q = query(
+      collection(db, "orders"),
+      where("user_id", "==", user.uid),
+      where("status", "in", ["preparing", "ready"])
+    );
 
-    const ch = supabase
-      .channel(`user-orders-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${user.id}` },
-        (payload: any) => {
-          const row = payload.new ?? payload.old;
-          if (!row) return;
-          const prev = lastStatus.current[row.id];
-          if (payload.eventType === "UPDATE" && prev && prev !== row.status) {
-            if (row.status === "ready") {
-              toast.success("🎉 Your order is ready!", {
-                description: "Head to the IK counter to collect it.",
-                duration: 8000,
-              });
-              // un-dismiss so the bar reappears for the new status
-              setDismissedState((d) => {
-                const next = d.filter((x) => x !== row.id);
-                setDismissed(next);
-                return next;
-              });
-            } else if (row.status === "completed") {
-              toast("✅ Order collected — enjoy your meal!");
-            } else if (row.status === "preparing") {
-              toast("👨‍🍳 Kitchen has started preparing your order");
-            }
+    const unsub = onSnapshot(q, (snap) => {
+      const newOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() } as ActiveOrder));
+
+      // Toast on status change
+      newOrders.forEach((o) => {
+        const prev = lastStatus.current[o.id];
+        if (prev && prev !== o.status) {
+          if (o.status === "ready") {
+            toast.success("🎉 Your order is ready!", {
+              description: "Head to the IK counter to collect it.",
+              duration: 8000,
+            });
+            setDismissedState((d) => {
+              const next = d.filter((x) => x !== o.id);
+              setDismissed(next);
+              return next;
+            });
+          } else if (o.status === "preparing") {
+            toast("👨‍🍳 Kitchen has started preparing your order");
           }
-          lastStatus.current[row.id] = row.status;
-          load();
         }
-      )
-      .subscribe();
+        lastStatus.current[o.id] = o.status;
+      });
 
-    return () => { supabase.removeChannel(ch); };
+      setOrders(newOrders);
+    });
+
+    return () => unsub();
   }, [user]);
 
   if (!user || hideOnRoute) return null;

@@ -1,22 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  User,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "@/integrations/firebase/config";
 import { toast } from "sonner";
-
-type Profile = {
-  id: string;
-  user_id: string;
-  full_name: string;
-  register_no: string | null;
-  college: string | null;
-  department: string | null;
-  year: string | null;
-  phone: string | null;
-};
+import type { Profile } from "@/integrations/firebase/types";
 
 type AuthCtx = {
   user: User | null;
-  session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
   loading: boolean;
@@ -28,54 +22,61 @@ const Ctx = createContext<AuthCtx | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadUserMeta = async (uid: string) => {
-    const [{ data: prof }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(prof as Profile | null);
-    const admin = (roles ?? []).some((r: any) => r.role === "admin");
-    setIsAdmin(admin);
+    try {
+      // Load profile
+      const profileRef = doc(db, "profiles", uid);
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        setProfile({ id: profileSnap.id, ...profileSnap.data() } as Profile);
+      } else {
+        setProfile(null);
+      }
+
+      // Load role
+      const rolesQ = query(
+        collection(db, "user_roles"),
+        where("user_id", "==", uid)
+      );
+      const rolesSnap = await getDocs(rolesQ);
+      const admin = rolesSnap.docs.some((d) => d.data().role === "admin");
+      setIsAdmin(admin);
+    } catch (err) {
+      console.error("Failed to load user meta:", err);
+    }
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        setTimeout(() => loadUserMeta(sess.user.id), 0);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        await loadUserMeta(firebaseUser.uid);
       } else {
         setProfile(null);
         setIsAdmin(false);
       }
-    });
-
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) loadUserMeta(s.user.id);
       setLoading(false);
     });
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const refreshProfile = async () => {
-    if (user) await loadUserMeta(user.id);
+    if (user) await loadUserMeta(user.uid);
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
+    setProfile(null);
+    setIsAdmin(false);
     toast.success("Logged out");
   };
 
   return (
-    <Ctx.Provider value={{ user, session, profile, isAdmin, loading, signOut, refreshProfile }}>
+    <Ctx.Provider value={{ user, profile, isAdmin, loading, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );

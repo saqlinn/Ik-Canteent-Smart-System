@@ -5,7 +5,8 @@ import { Logo } from "@/components/ik/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "@/integrations/firebase/config";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/forgot-password")({
@@ -21,13 +22,18 @@ function ForgotPassword() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    setSent(true);
-    toast.success("Reset link sent — check your inbox");
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSent(true);
+      toast.success("Reset link sent — check your inbox");
+    } catch (err: any) {
+      const msg = err.code === "auth/user-not-found"
+        ? "No account found with this email"
+        : err.message ?? "Failed to send reset email";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

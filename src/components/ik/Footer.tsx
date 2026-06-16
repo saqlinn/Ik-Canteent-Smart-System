@@ -35,6 +35,12 @@ export function Footer() {
             <li><Link to="/services" className="hover:text-primary">Services</Link></li>
             <li><Link to="/menu" className="hover:text-primary">Menu</Link></li>
             <li><Link to="/contact" className="hover:text-primary">Contact</Link></li>
+            <li>
+              <Link to="/wild-fermentation" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300">
+                🫙 Wild Fermentation
+                <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black uppercase text-black">NEW</span>
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if the requester is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: check if user is admin
+    function isAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Profiles — users can read/write their own profile; admins can read all
+    match /profiles/{userId} {
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isAuth() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // User roles — only admins can write; owner can read their own
+    match /user_roles/{docId} {
+      allow read: if isAuth() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+      // Allow create during signup (own role only, student only)
+      allow create: if isAuth()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.role == 'student';
+    }
+
+    // Menu items — anyone can read available items; only admins can write
+    match /menu_items/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Category settings — anyone can read; only admins can write
+    match /category_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders — users can read/create their own; admins can read/update all
+    match /orders/{orderId} {
+      allow read: if isAuth() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.user_id == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Order items — users can read items from their own orders
+    match /order_items/{itemId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // Inventory — only admins
+    match /inventory/{itemId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /inventory_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

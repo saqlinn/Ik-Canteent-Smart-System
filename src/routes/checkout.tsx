@@ -1,13 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Smartphone, Building2 } from "lucide-react";
+import { ArrowLeft, Loader2, CreditCard, Smartphone, Building2, Shield } from "lucide-react";
 import { Logo } from "@/components/ik/Logo";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { collection, addDoc, doc, writeBatch } from "firebase/firestore";
+import { db } from "@/integrations/firebase/config";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkout")({
@@ -15,20 +14,27 @@ export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — IK Smart Canteen" }] }),
 });
 
-const upiApps = [
-  { id: "gpay", name: "Google Pay", color: "from-blue-500 to-green-500" },
-  { id: "phonepe", name: "PhonePe", color: "from-purple-600 to-purple-400" },
-  { id: "paytm", name: "Paytm", color: "from-sky-500 to-blue-600" },
-];
-const banks = ["HDFC Bank", "ICICI Bank", "State Bank of India", "Axis Bank", "Kotak Mahindra Bank", "Canara Bank"];
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 function Checkout() {
   const { items, subtotal, gst, total, clear } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [method, setMethod] = useState<"upi" | "netbanking">("upi");
-  const [chosen, setChosen] = useState<string>("gpay");
-  const [upiId, setUpiId] = useState("");
   const [stage, setStage] = useState<"form" | "processing">("form");
 
   useEffect(() => {
@@ -46,32 +52,94 @@ function Checkout() {
     );
   }
 
-  const upiValid = /^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/.test(upiId.trim());
-  const canPay = method === "upi" ? upiValid : !!chosen;
+  const saveOrderToFirestore = async (paymentMethod: string, razorpayPaymentId?: string, razorpayOrderId?: string) => {
+    if (!user) return null;
+    const now = new Date().toISOString();
+
+    // Create order document
+    const orderRef = await addDoc(collection(db, "orders"), {
+      user_id: user.uid,
+      subtotal,
+      gst,
+      total,
+      status: "preparing",
+      payment_method: paymentMethod,
+      razorpay_order_id: razorpayOrderId ?? null,
+      razorpay_payment_id: razorpayPaymentId ?? null,
+      upi_id: null,
+      created_at: now,
+    });
+
+    // Create order_items in a batch
+    const batch = writeBatch(db);
+    items.forEach((item) => {
+      const itemRef = doc(collection(db, "order_items"));
+      batch.set(itemRef, {
+        order_id: orderRef.id,
+        menu_item_id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      });
+    });
+    await batch.commit();
+
+    return orderRef.id;
+  };
 
   const pay = async () => {
     if (!user) return;
-    if (method === "upi" && !upiValid) { toast.error("Enter a valid UPI ID (e.g. name@okicici)"); return; }
     setStage("processing");
+
     try {
-      await new Promise((r) => setTimeout(r, 2000));
-      const label = method === "upi" ? `UPI - ${upiApps.find(u => u.id === chosen)?.name}` : `Net Banking - ${chosen}`;
-      const { data: order, error } = await supabase.from("orders").insert({
-        user_id: user.id, subtotal, gst, total, status: "preparing",
-        payment_method: label, upi_id: method === "upi" ? upiId.trim() : null,
-      }).select().single();
-      if (error) throw error;
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Failed to load Razorpay. Check your internet connection.");
 
-      const lines = items.map((i) => ({
-        order_id: order.id, menu_item_id: i.id, name: i.name, price: i.price, quantity: i.quantity,
-      }));
-      const { error: e2 } = await supabase.from("order_items").insert(lines);
-      if (e2) throw e2;
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-      clear();
-      navigate({ to: "/order/$id", params: { id: order.id } });
-    } catch (e: any) {
-      toast.error(e.message ?? "Payment failed");
+      const options = {
+        key: razorpayKey,
+        amount: Math.round(total * 100), // paise
+        currency: "INR",
+        name: "Indu's Kitchen",
+        description: `Order for ${items.length} item(s)`,
+        image: "/favicon.ico",
+        handler: async (response: any) => {
+          try {
+            const orderId = await saveOrderToFirestore(
+              "Razorpay",
+              response.razorpay_payment_id,
+              response.razorpay_order_id
+            );
+            clear();
+            toast.success("Payment successful! Order placed.");
+            navigate({ to: "/order/$id", params: { id: orderId! } });
+          } catch {
+            toast.error("Order saving failed. Please contact support.");
+            setStage("form");
+          }
+        },
+        prefill: {
+          email: user.email ?? "",
+          contact: "",
+        },
+        theme: { color: "#d97706" },
+        modal: {
+          ondismiss: () => {
+            setStage("form");
+            toast("Payment cancelled.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", (response: any) => {
+        toast.error(`Payment failed: ${response.error.description}`);
+        setStage("form");
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message ?? "Payment failed");
       setStage("form");
     }
   };
@@ -79,7 +147,7 @@ function Checkout() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
           <Link to="/menu" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" /> Back to Menu
           </Link>
@@ -87,7 +155,7 @@ function Checkout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10">
         {stage === "processing" && (
           <div className="grid place-items-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -96,84 +164,64 @@ function Checkout() {
           </div>
         )}
 
-
         {stage === "form" && (
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <div>
-              <h1 className="font-display text-3xl font-bold">Choose Payment Method</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Secure & instant — pay your way.</p>
+              <h1 className="font-display text-2xl font-bold md:text-3xl">Checkout</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Secure payment powered by Razorpay.</p>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                {([
-                  { id: "upi", label: "UPI", icon: Smartphone },
-                  { id: "netbanking", label: "Net Banking", icon: Building2 },
-                ] as const).map(({ id, label, icon: I }) => (
-                  <button key={id} onClick={() => setMethod(id)}
-                    className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${
-                      method === id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40"
-                    }`}>
-                    <I className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{label}</span>
-                  </button>
-                ))}
-              </div>
+              <div className="mt-6 rounded-2xl border border-border bg-card p-5">
+                <div className="flex items-center gap-3 text-sm font-medium">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">Pay via Razorpay</div>
+                    <div className="text-xs text-muted-foreground">UPI · Cards · NetBanking · Wallets</div>
+                  </div>
+                </div>
 
-              {method === "upi" && (
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {upiApps.map((u) => (
-                    <button key={u.id} onClick={() => setChosen(u.id)}
-                      className={`rounded-2xl border p-5 text-center transition ${
-                        chosen === u.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40"
-                      }`}>
-                      <div className={`mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br ${u.color} text-xl font-black text-white`}>
-                        {u.name[0]}
-                      </div>
-                      <div className="text-sm font-semibold">{u.name}</div>
-                    </button>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  {[
+                    { icon: Smartphone, label: "UPI / QR" },
+                    { icon: CreditCard, label: "Cards" },
+                    { icon: Building2, label: "Net Banking" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-3 text-center">
+                      <Icon className="h-5 w-5 text-primary" />
+                      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                    </div>
                   ))}
                 </div>
-              )}
 
-              {method === "upi" && (
-                <div className="mt-6 space-y-2">
-                  <Label htmlFor="upi">Your UPI ID</Label>
-                  <Input id="upi" value={upiId} onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="yourname@okicici" autoComplete="off"
-                    className="h-12 rounded-xl bg-card" />
-                  <p className="text-xs text-muted-foreground">e.g. <code>9876543210@ybl</code> or <code>name@okhdfcbank</code>. We use this to validate your transaction.</p>
+                <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-400">
+                  <Shield className="h-4 w-4 shrink-0" />
+                  256-bit SSL encrypted · PCI-DSS compliant · Razorpay Secured
                 </div>
-              )}
-
-              {method === "netbanking" && (
-                <div className="mt-6 space-y-3">
-                  <label className="text-sm font-medium">Select Your Bank</label>
-                  <select value={chosen} onChange={(e) => setChosen(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm">
-                    <option value="">Choose a bank...</option>
-                    {banks.map((b) => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                </div>
-              )}
+              </div>
             </div>
 
-            <aside className="rounded-3xl border border-border bg-card p-6 shadow-card">
+            <aside className="rounded-3xl border border-border bg-card p-5 shadow-card md:p-6">
               <h3 className="font-display text-lg font-bold">Order Summary</h3>
               <ul className="mt-4 space-y-2 text-sm">
                 {items.map((i) => (
-                  <li key={i.id} className="flex justify-between">
-                    <span>{i.name} × {i.quantity}</span>
-                    <span>₹{(i.price * i.quantity).toFixed(2)}</span>
+                  <li key={i.id} className="flex justify-between gap-2">
+                    <span className="truncate">{i.name} × {i.quantity}</span>
+                    <span className="shrink-0">₹{(i.price * i.quantity).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
               <div className="mt-5 space-y-1.5 border-t border-border pt-4 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">GST (5%)</span><span>₹{gst.toFixed(2)}</span></div>
-                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold"><span>Total</span><span className="text-primary">₹{total.toFixed(2)}</span></div>
+                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-bold">
+                  <span>Total</span><span className="text-primary">₹{total.toFixed(2)}</span>
+                </div>
               </div>
-              <Button onClick={pay} disabled={!canPay} className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow">
-                Pay ₹{total.toFixed(2)}
+              <Button onClick={pay} className="mt-5 w-full bg-gradient-primary text-primary-foreground shadow-glow">
+                Pay ₹{total.toFixed(2)} →
               </Button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">By paying you agree to our terms of service.</p>
             </aside>
           </div>
         )}

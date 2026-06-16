@@ -1,10 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Inter:wght@400;500;600;700&display=swap");
 
 @theme inline {
   --font-display: "Playfair Display", serif;
@@ -164,3 +164,130 @@
     text-transform: uppercase;
   }
 }
+
+/* ─── Wild Fermentation Page Animations ─── */
+@keyframes wfBlobMove {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+@keyframes wfFloatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+@keyframes wfFloatMed {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+@keyframes wfFloatFast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes wfBubbleRise {
+  0% { transform: translateY(0) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-80px) scale(0.6); opacity: 0; }
+}
+
+@keyframes wfSlide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes wfPulse {
+  0% { opacity: 0.05; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0.12; transform: translate(-50%,-50%) scale(1.05); }
+}
+
+@keyframes wfJarFloat {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+  50% { transform: translate(-50%, -50%) translateY(-10px); }
+}
+
+/* Blob elements */
+.wf-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: wfBlobMove 12s ease-in-out infinite;
+}
+.wf-blob-1 {
+  width: 500px; height: 500px;
+  top: -100px; left: -100px;
+  background: oklch(0.32 0.12 140 / 30%);
+  animation-duration: 14s;
+}
+.wf-blob-2 {
+  width: 400px; height: 400px;
+  bottom: -80px; right: -80px;
+  background: oklch(0.38 0.12 60 / 25%);
+  animation-duration: 11s;
+  animation-delay: -4s;
+}
+.wf-blob-3 {
+  width: 300px; height: 300px;
+  top: 50%; left: 50%;
+  background: oklch(0.30 0.10 100 / 20%);
+  animation-duration: 16s;
+  animation-delay: -8s;
+}
+
+/* Floating bubble elements */
+.wf-bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: oklch(0.72 0.18 60 / 20%);
+  border: 1px solid oklch(0.72 0.18 60 / 30%);
+  animation: wfBubbleRise linear infinite;
+}
+
+/* Hero jar card */
+.wf-jar-card {
+  animation: wfJarFloat 5s ease-in-out infinite;
+}
+
+/* Float helpers */
+.wf-float-slow { animation: wfFloatSlow 6s ease-in-out infinite; }
+.wf-float-med  { animation: wfFloatMed 4.5s ease-in-out infinite; }
+.wf-float-fast { animation: wfFloatFast 3.5s ease-in-out infinite; }
+
+/* Logo slider */
+.wf-slider-track {
+  overflow: hidden;
+  width: 100%;
+}
+.wf-slider-inner {
+  display: flex;
+  width: max-content;
+  animation: wfSlide 35s linear infinite;
+}
+.wf-logo-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  height: 72px;
+  margin: 0 12px;
+  border-radius: 16px;
+  border: 1px solid oklch(0.32 0.025 120 / 60%);
+  background: oklch(0.22 0.025 128);
+  padding: 0 24px;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+}
+.wf-logo-card:hover {
+  border-color: oklch(0.72 0.18 48 / 40%);
+  background: oklch(0.24 0.03 128);
+}
+
+/* CTA background */
+.wf-cta-bg {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 180deg at 50% 50%, oklch(0.30 0.10 140 / 15%) 0deg, transparent 60deg, oklch(0.32 0.10 60 / 10%) 120deg, transparent 180deg, oklch(0.30 0.10 140 / 10%) 240deg, transparent 300deg, oklch(0.30 0.08 60 / 12%) 360deg);
+  animation: wfBlobMove 20s ease-in-out infinite;
+}
+

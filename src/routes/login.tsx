@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "@/integrations/firebase/config";
 import { toast } from "sonner";
 import heroFood from "@/assets/hero-food.jpg";
 
@@ -99,26 +101,32 @@ function LoginForm({
     e.preventDefault();
     setBusy(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      if (!data.user) throw new Error("Login failed");
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
 
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
-      const isAdmin = (roles ?? []).some((r: any) => r.role === "admin");
+      // Check role
+      const rolesQ = query(collection(db, "user_roles"), where("user_id", "==", uid));
+      const rolesSnap = await getDocs(rolesQ);
+      const isAdmin = rolesSnap.docs.some((d) => d.data().role === "admin");
 
       if (kind === "admin" && !isAdmin) {
-        await supabase.auth.signOut();
+        await auth.signOut();
         throw new Error("This account is not an admin account");
       }
       if (kind === "student" && isAdmin) {
-        await supabase.auth.signOut();
+        await auth.signOut();
         throw new Error("Admin accounts must use the Admin tab");
       }
 
       toast.success("Welcome back!");
       onSuccess();
     } catch (err: any) {
-      toast.error(err.message ?? "Sign in failed");
+      const msg = err.code === "auth/invalid-credential" || err.code === "auth/wrong-password"
+        ? "Invalid email or password"
+        : err.code === "auth/user-not-found"
+        ? "No account found with this email"
+        : err.message ?? "Sign in failed";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

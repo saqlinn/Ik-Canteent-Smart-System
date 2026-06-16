@@ -1,1 +1,0 @@
-ALTER TABLE public.category_settings ADD COLUMN IF NOT EXISTS opening_time time without time zone;
